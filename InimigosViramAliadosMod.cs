@@ -10,8 +10,10 @@ namespace InimigosViramAliados
     /// Funcionalidade: Cada inimigo derrotado se torna aliado do jogador.
     /// Inimigos próximos também são recrutados automaticamente.
     /// 
+    /// Obtém poder através do charm "Aliados Eternos" (derrota o Falso Cavaleiro)
+    /// 
     /// Autor: Gerado por Copilot
-    /// Versão: 1.0.1 (Debugged)
+    /// Versão: 1.1.0 (Com Charm System)
     /// </summary>
     public class InimigosViramAliadosMod : Mod
     {
@@ -28,7 +30,7 @@ namespace InimigosViramAliados
         /// </summary>
         public override string GetVersion()
         {
-            return "1.0.1";
+            return "1.1.0";
         }
 
         /// <summary>
@@ -39,8 +41,13 @@ namespace InimigosViramAliados
             try
             {
                 Logger.Log("[Aliados] ════════════════════════════════════════════");
-                Logger.Log("[Aliados] 🎮 Inicializando Mod 'Aliados de Inimigos' v1.0.1");
+                Logger.Log("[Aliados] 🎮 Inicializando Mod 'Aliados de Inimigos' v1.1.0");
+                Logger.Log("[Aliados] 📖 Com Sistema de Charm 'Aliados Eternos'");
                 Logger.Log("[Aliados] ════════════════════════════════════════════");
+
+                // Inicializar handler de boss
+                BossEncounterHandler.Initialize();
+                Logger.Log("[Aliados] ✓ Sistema de boss handler ativo");
 
                 // Hook de morte de inimigo - evento principal
                 ModHooks.OnRecieveDeathEventHook += OnEnemyDeath;
@@ -56,6 +63,7 @@ namespace InimigosViramAliados
 
                 Logger.Log("[Aliados] ════════════════════════════════════════════");
                 Logger.Log("[Aliados] ✅ Mod inicializado com sucesso!");
+                Logger.Log("[Aliados] 🎁 Derrote o Falso Cavaleiro para obter o charm!");
                 Logger.Log("[Aliados] ════════════════════════════════════════════");
             }
             catch (System.Exception ex)
@@ -66,7 +74,7 @@ namespace InimigosViramAliados
 
         /// <summary>
         /// Hook chamado quando um inimigo morre.
-        /// Responsável por converter o inimigo em aliado.
+        /// Responsável por converter o inimigo em aliado (se charm estiver equipado).
         /// </summary>
         private void OnEnemyDeath(
             EnemyDeathEffects enemyDeathEffects,
@@ -94,6 +102,13 @@ namespace InimigosViramAliados
                 if (enemy == null)
                 {
                     Logger.Log("[Aliados] ⚠ Enemy gameObject é nulo!");
+                    return;
+                }
+
+                // Verificar se o charm está equipado
+                if (!AllyCharmManager.IsCharmEquipped())
+                {
+                    // Charm não equipado - apenas fazer a detecção do boss
                     return;
                 }
 
@@ -145,7 +160,11 @@ namespace InimigosViramAliados
         {
             try
             {
-                Logger.Log($"[Aliados] ✅ Cena carregada! ID: {scene.buildIndex}");
+                Logger.Log($"[Aliados] ✅ Cena carregada! Build Index: {scene.buildIndex}");
+                
+                // Log do status do charm
+                string charmStatus = AllyCharmManager.GetCharmStatus();
+                Logger.Log($"[Aliados] 🎁 Status do Charm: {charmStatus}");
             }
             catch (System.Exception ex)
             {
@@ -162,6 +181,9 @@ namespace InimigosViramAliados
             {
                 Logger.Log("[Aliados] ════════════════════════════════════════════");
                 Logger.Log("[Aliados] 🛑 Descarregando mod...");
+
+                // Limpar boss handler
+                BossEncounterHandler.Cleanup();
 
                 // Desinscrever de hooks
                 ModHooks.OnRecieveDeathEventHook -= OnEnemyDeath;
