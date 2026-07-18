@@ -1,5 +1,6 @@
 using Modding;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace InimigosViramAliados
 {
@@ -10,7 +11,7 @@ namespace InimigosViramAliados
     /// Inimigos próximos também são recrutados automaticamente.
     /// 
     /// Autor: Gerado por Copilot
-    /// Versão: 1.0.0
+    /// Versão: 1.0.1 (Debugged)
     /// </summary>
     public class InimigosViramAliadosMod : Mod
     {
@@ -27,7 +28,7 @@ namespace InimigosViramAliados
         /// </summary>
         public override string GetVersion()
         {
-            return "1.0.0";
+            return "1.0.1";
         }
 
         /// <summary>
@@ -35,18 +36,32 @@ namespace InimigosViramAliados
         /// </summary>
         public override void Initialize()
         {
-            Logger.Log("[Aliados] Inicializando mod...");
+            try
+            {
+                Logger.Log("[Aliados] ════════════════════════════════════════════");
+                Logger.Log("[Aliados] 🎮 Inicializando Mod 'Aliados de Inimigos' v1.0.1");
+                Logger.Log("[Aliados] ════════════════════════════════════════════");
 
-            // Hook de morte de inimigo - evento principal
-            ModHooks.OnRecieveDeathEventHook += OnEnemyDeath;
+                // Hook de morte de inimigo - evento principal
+                ModHooks.OnRecieveDeathEventHook += OnEnemyDeath;
+                Logger.Log("[Aliados] ✓ Hook OnRecieveDeathEventHook inscrito");
 
-            // Hook de carregamento de cena - limpar aliados da cena anterior
-            ModHooks.BeforeSceneLoadHook += OnBeforeSceneLoad;
+                // Hook de carregamento de cena - limpar aliados da cena anterior
+                ModHooks.BeforeSceneLoadHook += OnBeforeSceneLoad;
+                Logger.Log("[Aliados] ✓ Hook BeforeSceneLoadHook inscrito");
 
-            // Hook de carregamento completo de cena
-            ModHooks.SceneLoadHook += OnSceneLoaded;
+                // Hook de carregamento completo de cena
+                ModHooks.SceneLoadHook += OnSceneLoaded;
+                Logger.Log("[Aliados] ✓ Hook SceneLoadHook inscrito");
 
-            Logger.Log("[Aliados] Mod inicializado com sucesso!");
+                Logger.Log("[Aliados] ════════════════════════════════════════════");
+                Logger.Log("[Aliados] ✅ Mod inicializado com sucesso!");
+                Logger.Log("[Aliados] ════════════════════════════════════════════");
+            }
+            catch (System.Exception ex)
+            {
+                Logger.Log($"[Aliados] ❌ ERRO na inicialização: {ex.Message}\n{ex.StackTrace}");
+            }
         }
 
         /// <summary>
@@ -61,38 +76,46 @@ namespace InimigosViramAliados
             ref bool spellBurn,
             ref bool isWatery)
         {
-            // Evitar duplicação de eventos
-            if (eventAlreadyRecieved)
+            try
             {
-                return;
+                // Evitar duplicação de eventos
+                if (eventAlreadyRecieved)
+                {
+                    return;
+                }
+
+                if (enemyDeathEffects == null)
+                {
+                    Logger.Log("[Aliados] ⚠ EnemyDeathEffects é nulo!");
+                    return;
+                }
+
+                GameObject enemy = enemyDeathEffects.gameObject;
+                if (enemy == null)
+                {
+                    Logger.Log("[Aliados] ⚠ Enemy gameObject é nulo!");
+                    return;
+                }
+
+                Logger.Log($"[Aliados] 💀 Evento de morte: {enemy.name}");
+
+                // Converter para aliado
+                bool converted = EnemyConversionHandler.ConvertEnemyToAlly(enemy);
+
+                if (converted)
+                {
+                    // Deixar o inimigo "vivo" como aliado
+                    // Não permitir destruição imediata
+                    resetDeathEvent = true;
+                    Logger.Log($"[Aliados] ✓ {enemy.name} virou aliado!");
+
+                    // Log de status
+                    AllyManager.LogAllyStatus();
+                }
             }
-
-            if (enemyDeathEffects == null)
+            catch (System.Exception ex)
             {
-                Logger.Log("[Aliados] EnemyDeathEffects nulo!");
-                return;
-            }
-
-            GameObject enemy = enemyDeathEffects.gameObject;
-            if (enemy == null)
-            {
-                Logger.Log("[Aliados] Enemy gameObject nulo!");
-                return;
-            }
-
-            Logger.Log($"[Aliados] Inimigo morrendo: {enemy.name}");
-
-            // Converter para aliado
-            bool converted = EnemyConversionHandler.ConvertEnemyToAlly(enemy);
-
-            if (converted)
-            {
-                // Deixar o inimigo "vivo" como aliado
-                // Não permitir destruição imediata
-                resetDeathEvent = true;
-
-                // Log
-                AllyManager.LogAllyStatus();
+                Logger.Log($"[Aliados] ❌ Erro em OnEnemyDeath: {ex.Message}\n{ex.StackTrace}");
             }
         }
 
@@ -102,8 +125,16 @@ namespace InimigosViramAliados
         /// </summary>
         private void OnBeforeSceneLoad(string nextSceneName)
         {
-            Logger.Log($"[Aliados] Carregando cena: {nextSceneName}");
-            AllyManager.ClearAllAllies();
+            try
+            {
+                Logger.Log($"[Aliados] 🔄 Mudando cena para: {nextSceneName}");
+                AllyManager.ClearAllAllies();
+                Logger.Log("[Aliados] → Aliados antigos limpos da memória");
+            }
+            catch (System.Exception ex)
+            {
+                Logger.Log($"[Aliados] ⚠ Erro em OnBeforeSceneLoad: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -112,7 +143,14 @@ namespace InimigosViramAliados
         /// </summary>
         private void OnSceneLoaded(Scene scene)
         {
-            Logger.Log($"[Aliados] Cena carregada: {scene.name}. Aliados resetados.");
+            try
+            {
+                Logger.Log($"[Aliados] ✅ Cena carregada! ID: {scene.buildIndex}");
+            }
+            catch (System.Exception ex)
+            {
+                Logger.Log($"[Aliados] ⚠ Erro em OnSceneLoaded: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -120,17 +158,29 @@ namespace InimigosViramAliados
         /// </summary>
         public override void Unload()
         {
-            Logger.Log("[Aliados] Descarregando mod...");
+            try
+            {
+                Logger.Log("[Aliados] ════════════════════════════════════════════");
+                Logger.Log("[Aliados] 🛑 Descarregando mod...");
 
-            // Desinscrever de hooks
-            ModHooks.OnRecieveDeathEventHook -= OnEnemyDeath;
-            ModHooks.BeforeSceneLoadHook -= OnBeforeSceneLoad;
-            ModHooks.SceneLoadHook -= OnSceneLoaded;
+                // Desinscrever de hooks
+                ModHooks.OnRecieveDeathEventHook -= OnEnemyDeath;
+                ModHooks.BeforeSceneLoadHook -= OnBeforeSceneLoad;
+                ModHooks.SceneLoadHook -= OnSceneLoaded;
 
-            // Limpar aliados
-            AllyManager.ClearAllAllies();
+                Logger.Log("[Aliados] ✓ Hooks desinscritos");
 
-            Logger.Log("[Aliados] Mod descarregado.");
+                // Limpar aliados
+                AllyManager.ClearAllAllies();
+                Logger.Log("[Aliados] ✓ Aliados limpos");
+
+                Logger.Log("[Aliados] ✅ Mod descarregado com sucesso!");
+                Logger.Log("[Aliados] ════════════════════════════════════════════");
+            }
+            catch (System.Exception ex)
+            {
+                Logger.Log($"[Aliados] ❌ Erro ao descarregar: {ex.Message}");
+            }
         }
     }
 }
